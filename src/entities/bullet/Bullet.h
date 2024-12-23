@@ -6,15 +6,19 @@
 
 class Bullet : public Entity {
 public:
-  Bullet(Vector2 position, Vector2 direction, float speed);
+  Bullet(Vector3 position, Vector3 velocity, Vector3 direction,
+         BoundingBox bounds, float speed);
+
   void Update();
   void Draw();
 
-  Vector2 position;
-  Vector2 direction;
-  float speed;
-  int width;
-  int height;
+  Vector3 position;
+  Vector3 velocity;
+  Vector3 direction;
+
+  BoundingBox bounds;
+
+  float speed = 0.1f;
 };
 
 #endif

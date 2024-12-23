@@ -11,7 +11,6 @@ public:
 
   Vector3 position;
   Vector3 velocity;
-  Vector3 force;
 
   BoundingBox bounds;
 };

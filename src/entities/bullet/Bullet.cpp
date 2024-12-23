@@ -3,17 +3,14 @@
 #include "raymath.h"
 using namespace std;
 
-Bullet::Bullet(Vector2 position, Vector2 direction, float speed)
-    : position(position), direction(direction), speed(speed), width(5),
-      height(5) {}
+Bullet::Bullet(Vector3 position, Vector3 velocity, Vector3 direction,
+               BoundingBox bounds, float speed)
+    : position(position), velocity(velocity), direction(direction),
+      bounds(bounds), speed(speed) {}
 
 void Bullet::Update() {
-  Vector2 velocity = {0, 0};
-  velocity = Vector2Scale(direction, speed);
-  position = Vector2Add(position, velocity);
+  velocity = Vector3Scale(direction, 0.05f);
+  position = Vector3Add(position, velocity);
 }
 
-void Bullet::Draw() {
-  DrawRectangle(static_cast<int>(position.x), static_cast<int>(position.y),
-                width, height, BLUE);
-}
+void Bullet::Draw() { DrawSphere(position, 0.3f, Color{0, 0, 255, 200}); }

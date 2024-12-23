@@ -1,29 +1,13 @@
-
-
-/*******************************************************************************************
- *
- *   raylib [core] example - 3d camera first person
- *
- *   Example originally created with raylib 1.3, last time updated with
- *raylib 1.3
- *
- *   Example licensed under an unmodified zlib/libpng license, which is an
- *OSI-certified, BSD-like license that allows static linking with closed source
- *software
- *
- *   Copyright (c) 2015-2024 Ramon Santamaria (@raysan5)
- *
- ********************************************************************************************/
-
 #include "./entities/player/Player.h"
+#include "entities/bullet/Bullet.h"
 #include "raylib.h"
 #include "raymath.h"
 #include "rcamera.h"
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
+#include <vector>
 using namespace std;
-
-#define MAX_COLUMNS 20
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -40,31 +24,18 @@ int main(void) {
   // Define the camera to look into our 3d world (position, target, up vector)
   Camera camera = {0};
   camera.position = (Vector3){0.0f, 2.0f, 4.0f}; // Camera position
-  camera.target = (Vector3){0.0f, 2.0f, 0.0f};   // Camera looking at point
+  Vector3 initSpawn = camera.position;
+  camera.target = (Vector3){0.0f, 2.0f, 0.0f}; // Camera looking at point
   camera.up =
       (Vector3){0.0f, 1.0f, 0.0f}; // Camera up vector (rotation towards target)
   camera.fovy = 60.0f;             // Camera field-of-view Y
   camera.projection = CAMERA_PERSPECTIVE; // Camera projection type
 
   int cameraMode = CAMERA_FIRST_PERSON;
-
-  // Generates some random columns
-  float heights[MAX_COLUMNS] = {0};
-  Vector3 positions[MAX_COLUMNS] = {0};
-  Color colors[MAX_COLUMNS] = {0};
-
-  for (int i = 0; i < MAX_COLUMNS; i++) {
-    heights[i] = (float)GetRandomValue(1, 12);
-    positions[i] = (Vector3){(float)GetRandomValue(-15, 15), heights[i] / 2.0f,
-                             (float)GetRandomValue(-15, 15)};
-    colors[i] =
-        (Color){GetRandomValue(20, 255), GetRandomValue(10, 55), 30, 255};
-  }
-
   Player player(camera.position, (Vector3){0.0f, 0.0f, 0.0f},
                 (Vector3){0.0f, 0.0f, 0.0f}, (BoundingBox){0}, 0.1f);
 
-  // DisableCursor(); // Limit cursor to relative movement inside the window
+  std::vector<Bullet> entities;
 
   SetTargetFPS(60); // Set our game to run at 60 frames-per-second
   //--------------------------------------------------------------------------------------
@@ -84,11 +55,18 @@ int main(void) {
     }
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+
+      Vector3 forward = Vector3Normalize(
+          Vector3Subtract(camera.target, camera.position)); // Get the
+
+      // Spawn a bullet!
+      Bullet bullet(camera.position, {0, 0, 0}, forward, (BoundingBox){0},
+                    0.1f);
+      entities.push_back(bullet);
+
+    } else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
       cameraMode = CAMERA_FIRST_PERSON;
       DisableCursor();
-    } else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
-      cameraMode = CAMERA_ORBITAL;
-      EnableCursor();
     }
 
     UpdateCameraPro(&camera, movement,
@@ -105,36 +83,41 @@ int main(void) {
 
     BeginMode3D(camera);
 
-    DrawPlane((Vector3){0.0f, 0.0f, 0.0f}, (Vector2){32.0f, 32.0f},
-              LIGHTGRAY); // Draw ground
-    DrawCube((Vector3){-16.0f, 2.5f, 0.0f}, 1.0f, 5.0f, 32.0f,
-             BLUE); // Draw a blue wall
-    DrawCube((Vector3){16.0f, 2.5f, 0.0f}, 1.0f, 5.0f, 32.0f,
-             LIME); // Draw a green wall
-    DrawCube((Vector3){0.0f, 2.5f, 16.0f}, 32.0f, 5.0f, 1.0f,
-             GOLD); // Draw a yellow wall
+    // DrawPlane((Vector3){0.0f, 0.0f, 0.0f}, (Vector2){32.0f, 32.0f},
+    //           LIGHTGRAY); // Draw ground
+    // DrawCube((Vector3){-16.0f, 2.5f, 0.0f}, 1.0f, 5.0f, 32.0f,
+    //          BLUE); // Draw a blue wall
+    // DrawCube((Vector3){16.0f, 2.5f, 0.0f}, 1.0f, 5.0f, 32.0f,
+    //          LIME); // Draw a green wall
+    // DrawCube((Vector3){0.0f, 2.5f, 16.0f}, 32.0f, 5.0f, 1.0f,
+    //          GOLD); // Draw a yellow wall
 
-    // Draw floor grid
-    for (int i = -20; i < 20; i++) {
-      DrawLine3D((Vector3){(float)i, 0.01f, -20.0f},
-                 (Vector3){(float)i, 0.01f, 20.0f}, DARKGRAY);
-
-      DrawLine3D((Vector3){-20.0f, 0.01f, (float)i},
-                 (Vector3){20.0f, 0.01f, (float)i}, DARKGRAY);
+    // Update & draw the entities
+    for (int i = 0; i < entities.size(); i++) {
+      entities[i].Update();
+      entities[i].Draw();
     }
 
-    DrawSphere((Vector3){5.0f, 1.0f, 1.0f}, 1.0f, GOLD);
+    // Draw floor grid
+    for (int i = -200; i < 200; i++) {
 
-    // Draw some cubes around
-    // for (int i = 0; i < MAX_COLUMNS; i++) {
-    //   DrawCube(positions[i], 2.0f, heights[i], 2.0f, colors[i]);
-    //   DrawCubeWires(positions[i], 2.0f, heights[i], 2.0f, MAROON);
-    // }
+      float distanceFactor =
+          (float)abs(i) / 100.0f; // Normalize distance (0 to 1)
+      unsigned char opacity =
+          (int)((1.0f - distanceFactor) *
+                255); // Invert factor for closer = more opaque
+
+      DrawLine3D((Vector3){(float)i, 0.01f, -200.0f},
+                 (Vector3){(float)i, 0.01f, 200.0f},
+                 Color{60, 60, 60, opacity});
+
+      DrawLine3D((Vector3){-200.0f, 0.01f, (float)i},
+                 (Vector3){200.0f, 0.01f, (float)i},
+                 Color{60, 60, 60, opacity});
+    }
 
     // Draw player cube
     DrawCube(camera.target, 0.5f, 0.5f, 0.5f, Color{0, 0, 0, 0});
-    // DrawCubeWires(camera.target, 0.5f, 0.5f, 0.5f, DARKPURPLE);
-
     EndMode3D();
 
     // Draw crosshairs
