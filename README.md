@@ -1,3 +1,5 @@
+![image](https://github.com/user-attachments/assets/daf0e61c-d210-47fa-a2bb-e1e5eb419aea)
+
 # FPS In CPP & Raylib
 So far a pretty straightforward first person shooter game. 
 
